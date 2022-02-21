@@ -1,0 +1,657 @@
+print("ADITYA SRINIVASAN")
+
+
+#install.packages("FSA")
+#install.packages("FSAdata")
+#install.packages("magrittr")
+#install.packages("dplyr")
+#install.packages ("tidyr")
+#install.packages ("plyr")
+#install.packages("tidyverse")
+#install.packages("caret")
+#install.packages("glmnet")
+#install.packages("mlbench")
+#install.packages("psych")
+#install.packages("party")
+#install.packages("PerformanceAnalytics")
+#install.packages("rmdformats")
+#install.packages("corrgram")
+#install.packages("MASS")
+#install.packages("ggplot2")
+#install.packages("modeest")
+#install.packages("lubridate")
+#install.packages("plotly")
+#install.packages("base")
+#install.packages("stats")
+#install.packages("tibble")
+#install.packages("naniar")
+#install.packages("kableExtra")
+#install.packages("zoo")
+#install.packages("wordcloud")
+#install.packages("wordcloud2")
+#install.packages("xlsx")
+
+
+library(FSA)
+library(FSAdata)
+library(magrittr)
+library(dplyr)
+library(tidyr)
+library(plyr)
+library(tidyverse)
+library(data.table)
+library(caret)
+library(glmnet)
+library(mlbench)
+library(psych)
+library(party)
+library(PerformanceAnalytics)
+library(rmdformats)
+library(corrgram)
+library(MASS)
+library(ggplot2)
+library(modeest)
+library(lubridate)
+library(plotly)
+library(base)
+library(stats)
+library(tibble)
+library(naniar)
+library(zoo)
+library(kableExtra)
+library(wordcloud)
+library(wordcloud2)
+
+
+
+#define filename
+filename <- "Popular Movies TV shows from Prime Videos Netflix version_3.csv"
+
+getwd()
+#to set the current work directory
+setwd("C:/Users/91903/Downloads")
+
+
+#loading the CSV file
+df=read.csv(file = 'Popular Movies TV shows from Prime Videos Netflix version_3.csv', na.strings = c("NA", ""), stringsAsFactors=F)
+view(df) #Viewing the Datatable   
+head(df) #Head of the Data first 5 rows
+summary(df) #Summary Statistics
+dim(df) #Dimensions of the Data 
+str(df)
+colnames(df) #Seeing the column names of the data
+count(df$release_year)
+view(df)
+
+
+
+#[1] DATA CLEANING ACTIVITIES
+
+#Checking for the number of duplicate rows in the dataframe 
+
+duplicated(df)
+df[duplicated(df)]
+
+###There are no duplicate rows here in the data-set. 
+
+
+#for each column, sums up all the empty values
+colSums(is.na(df))
+#From the above, it is clear that we do have missing values in the dataset. 
+#We have missing values in the variable, 'Rating'. 
+library(ggplot2)
+gg_miss_which(df)
+
+
+#We see graphically that the variable, 'Rating' has missing values. 
+
+#We can remove some unwanted information from the dataset. 
+#---->An example here is the 'ID' variable. 
+
+#drop ID column
+df = subset(df, select = -c(ID))
+view(df)
+#the 'ID' variable has been removed from the dataset. 
+
+#drop X column
+df = subset(df, select = -c(X))
+view(df)
+#the 'X' variable has been removed from the dataset. 
+
+#print number of missing values for each variable
+data.frame("variable"=c(colnames(df)), "missing values count"=sapply(df, function(x) sum(is.na(x))), row.names=NULL)
+
+#From the above output we see that we have missing values for the below variable:'Rating'. 
+
+##Removing the records which have missing values in the variable, 'Rating'. 
+df_clean <- df[complete.cases(df),]
+
+#As per the question, we should restrict the dataset to an upper limit of 6000 rows. 
+#Here, I shall restrict the dataset to 800 rows. 
+df_clean<- head(df_clean,800)
+df_clean
+view(df_clean)
+
+
+#Now let us check whether we have any missing values in the variable 'rating' 
+#print number of missing values for each variable
+data.frame("variable"=c(colnames(df_clean)), "missing values count"=sapply(df_clean, function(x) sum(is.na(x))), row.names=NULL)
+
+#From the output, we can infer that there are no missing values anymore in the variable, 'Rating'. 
+df<-df_clean
+#Now let us check whether we have any missing values in the variable 'Rating' 
+#print number of missing values for each variable
+data.frame("variable"=c(colnames(df)), "missing values count"=sapply(df, function(x) sum(is.na(x))), row.names=NULL)
+view(df)
+
+#Dimensions of the dataframe before removing duplicates, if any
+dim(df)
+
+#Removing duplicates, if any 
+df %>% distinct(Title, Year, Rating, IMDb, Rotten.Tomatoes, Genre, Netflix, Amazon.Prime.Video,.keep_all=TRUE)
+
+#Checking dimensions after removing duplicates- we find that the dimension remains unchanged.
+#Thus, there are no duplicate rows in the dataset. It is a clean dataset. 
+dim(df)
+
+
+#Heat Map: R Scatter Plot (R Coder, n.d.).
+#install.packages("MASS")
+smoothScatter(df$IMDb, df$Rotten.Tomatoes, 
+              
+              #The smoothScatter() function uses a kernel density estimate to produce smoothed color density representations of the scatterplot.
+              #(Kabacoff, 2015, p.272). 
+              main="Heat Map: R scatter plot",
+              xlab= "IMDb Rating", 
+              ylab= "Rotten.Tomatoes Rating",
+              transformation = function(x) x ^ 0.4,
+              colramp = colorRampPalette(c("#000099", "#00FEFF", "#45FE4F",
+                                           "#FCFF00", "#FF9400", "#FF3100")))
+library(MASS)
+kern <- kde2d(df$IMDb, df$Rotten.Tomatoes)
+
+contour(kern, drawlabels = FALSE, nlevels = 6,
+        col = rev(heat.colors(6)), add = TRUE, lwd = 3) #Adding Contours to the Heat Map 
+
+
+str(df)
+#Rating is a categorical variable so we will change the type of it.
+df$Rating <- as.factor(df$Rating)
+df$Genre <- as.factor(df$Genre)
+str(df)
+
+#IMDb is a categorical variable so we will change the type of it.
+df$IMDb <- as.numeric(df$IMDb)
+str(df)
+#IMDb is converted to numeric. 
+
+df$Rotten.Tomatoes <- as.numeric(df$Rotten.Tomatoes)
+str(df)
+#Rotten.Tomatoes is converted to numeric. 
+
+#Checking for Outliers 
+boxplot(df$IMDb, main="Boxplot of IMDb")$out #(Shakya, S. et al., 2021)
+boxplot(df$Rotten.Tomatoes, main="Boxplot of Rotten.Tomatoes")$out #(Shakya, S. et al., 2021)
+
+#Let us find out the rows in the data frame which have outlier values under the variable, "IMDb"
+out<- boxplot.stats(df$IMDb)$out
+out_ind <- which(df$IMDb %in% c(out))
+out_ind
+
+
+#Checking for Outliers 
+boxplot(df$IMDb, main="Boxplot of IMDb")$out #(Shakya, S. et al., 2021)
+
+#Let us look at the summary stats for IMDb
+summary(IMDb)
+#Here 6.80 is the third quartile, and 5.10 is the first quartile. 
+#We have a few outliers in the IMDb variable. 
+#Having said this, treatment of the outliers in IMDb does not make sense as it is a rating on a scale of 1-10. 
+
+out <- boxplot.stats(df$IMDb)$out
+out_ind <- which(df$IMDb %in% c(out))
+out_ind
+df[out_ind, ] ##Checking the outliers in the records 
+
+##print the values of the outliers directly on the boxplot with the mtext() function:
+boxplot(df$IMDb,
+        ylab = "IMDb",
+        main = "Boxplot of IMDb"
+)
+mtext(paste("Outliers: ", paste(out, collapse = ", ")))
+
+#We have a few outliers in the IMDb variable. 
+#Having said this, treatment of the outliers in IMDb does not make sense as it is a rating on a scale of 1-10. 
+#We have done the data cleaning steps and can continue with exploring the data.
+
+#*DATA VISUALIZATION**
+
+#[1]Bar Plots: Number of Observations across Genres  
+#install.packages("tidyverse")
+library(tidyverse)
+ggplot(df) +
+  geom_bar(aes(x = Genre), fill = '#cdc0b0', 
+          color = '#3b3c36') + 
+  labs (
+    title = "Number of Movies/TV Shows across Genres", # ...title
+    x = "Types",        # ...x-axis
+    y = "Observation Count",    # ...y-axis
+  ) +
+  theme(axis.text.x = element_text(angle = 90))
+#Rotates x-axis text labels to 90 degrees
+#We find the number of Movies to be twice as many when compared to the number of TV Shows on Netflix
+
+#[2]Pie Chart: Spread of Content by Genre 
+
+spread_by_Genre <- df %>% group_by(Genre) %>% summarise(
+  count = n()
+)
+
+pie_chart_1 <- plot_ly(spread_by_Genre, labels = ~Genre, values = ~count, type = 'pie', marker = list(colors = c("#bdc29b", "#101641")))
+pie_chart_1 <- pie_chart_1 %>% layout(title = 'Spread Of Netflix and Amazon Prime Video Content By Genre',
+                                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie_chart_1
+
+##Inferences: The genre, 'Comedy' occupies the largest share of content on the online streaming platforms: Netflix and Amazon Prime Video. 
+
+
+#[3]Pie Chart: Spread of Content by Rating  
+
+spread_by_Rating <- df %>% group_by(Rating) %>% summarise(
+  count = n()
+)
+
+pie_chart_2 <- plot_ly(spread_by_Rating, labels = ~Rating, values = ~count, type = 'pie', marker = list(colors = c("#bdc29b", "#101641")))
+pie_chart_2 <- pie_chart_2 %>% layout(title = 'Spread Of Netflix and Amazon Prime Video Content By Rating',
+                                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie_chart_2
+
+##Inferences: The Rating: 18+ occupies the largest share of content across Amazon Prime Video and Netflix 
+
+
+#########################################
+dfGenre <- df$Genre
+Genre_Freq<-table(dfGenre)
+print(Genre_Freq) ##Number of Genre
+
+
+cGenre <- table(df$Genre)
+cGenre
+class(cGenre)
+
+
+cGenrePct <- prop.table(table(df$Genre)) * 100 #Scaled to 100 since percentage
+cGenrePct
+class(cGenrePct)
+
+#Creating a tabular visual
+library(dplyr)
+new_df <- bind_rows(cGenre,cGenrePct)
+view(new_df)
+
+head(new_df,n=10)
+#########################################
+
+
+################################################
+#Part 2# 
+#Here, we add two new attributes to the dataset. 
+#We create bins for the variables, IMDb and Rotten.Tomatoes 
+
+
+#Creating bins for IMDb
+IMDb<- df$IMDb
+IMDb
+cut(IMDb,4)
+###The levels are (1.99 to 3.67] ,(3.67 to 5.35], (5.35 to 7.02] ,(7.02 to 8.71]
+cut(IMDb,4, labels = c("Poor", "Normal", "Good", "Excellent"))
+view(df)
+df$IMDbbins <- cut(IMDb,4, labels = c("Poor", "Normal", "Good", "Excellent"))
+
+#After this, a new column (attribute), i.e., IMDbbins gets added to the dataframe
+
+#Creating bins for Rotten.Tomatoes
+Rotten.Tomatoes <- df$Rotten.Tomatoes
+Rotten.Tomatoes
+cut(Rotten.Tomatoes,4)
+###The levels are (19.9,38.5] (38.5,57] (57,75.5] (75.5,94.1]
+cut(Rotten.Tomatoes,4, labels = c("Poor", "Normal", "Good", "Excellent"))
+view(df)
+df$Rotten.Tomatoesbins <- cut(Rotten.Tomatoes,4, labels = c("Poor", "Normal", "Good", "Excellent"))
+
+#After this, a new column (attribute), i.e., Rotten.Tomatoesbins gets added to the dataframe
+
+str(df)
+
+
+#[4]
+# Scatterplot of IMDb rating and Rotten.Tomatoes rating 
+theme_set(theme_bw())  # pre-set the bw theme.
+g <- ggplot(df, aes(IMDb, Rotten.Tomatoes))
+g + geom_count(col="tomato3", show.legend=F) +
+  labs( x = "IMDb Rating",        # ...x-axis
+        y = "Rotten.Tomatoes Rating",    # ...y-axis
+        title="Scatterplot of IMDb rating and Rotten.Tomatoes rating")
+
+#[5]
+# Scatterplot of IMDbbins rating and Rotten.Tomatoesbins rating 
+theme_set(theme_bw())  # pre-set the bw theme.
+g <- ggplot(df, aes(IMDbbins, Rotten.Tomatoesbins))
+g + geom_count(col="tomato3", show.legend=F) +
+  labs( x = "IMDb Rating",        # ...x-axis
+        y = "Rotten.Tomatoes Rating",    # ...y-axis
+        title="Counts Plot")
+
+
+#[6]
+#Pie Chart: Spread of Content by IMDb Rating (bins)  
+
+spread_by_IMDb_bins <- df %>% group_by(IMDbbins) %>% summarise(
+  count = n()
+)
+
+pie_chart_3 <- plot_ly(spread_by_IMDb_bins, labels = ~IMDbbins, values = ~count, type = 'pie', marker = list(colors = c("#00ee00", "#2e2d88", "#b94e48", "#fff8dc")))
+pie_chart_3 <- pie_chart_3 %>% layout(title = 'Spread Of Netflix and Amazon Prime Video Content By IMDb Categories',
+                                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie_chart_3
+
+#[7]
+#Pie Chart: Spread of Content by Rotten.Tomatoes Rating (bins)  
+
+spread_by_Rotten.Tomatoesbins <- df %>% group_by(Rotten.Tomatoesbins) %>% summarise(
+  count = n()
+)
+
+pie_chart_4 <- plot_ly(spread_by_Rotten.Tomatoesbins, labels = ~Rotten.Tomatoesbins, values = ~count, type = 'pie', marker = list(colors = c("#e5aa70", "#cae00d", "#4d5d53", "##1560bd")))
+pie_chart_4 <- pie_chart_4 %>% layout(title = 'Spread Of Content By Rotten.Tomatoes Categories',
+                                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie_chart_4
+
+
+view(df)
+
+
+#[8]
+#A violin plot is similar to a box plot, but it shows the density within groups.
+#A violin plot essentially depicts distributions of numeric data for multiple groups using density curves. 
+#In a violin plot, the width of each curve corresponds with the approximate frequency of data points in each region.
+
+#IMDb Vs. Rating
+g <- ggplot(df, aes(Rating, IMDb), fill='limegreen')
+g + geom_violin() + #this one makes it a violin plot
+  labs(title="Violin plots: Rating versus IMDb score", 
+       x="Rating of Content",
+       y="IMDb Score")+ 
+  theme(axis.text.x = element_text(angle=65, vjust=0.6))
++    theme_light()
+
+#[9] #Distribution of Content by Genre across Platforms
+df%>% select(Genre) %>%
+  filter(!is.na(Genre)) %>%
+  mutate(Genre = fct_lump(Genre, 10)) %>%
+  group_by(Genre) %>%
+  summarise(Count = n()) %>%
+  arrange(Count) %>%
+  plot_ly(
+    x = ~ Count ,
+    y = ~ Genre,
+    type = "bar",
+    orientation = 'h',
+    color = "#007d8c"
+  ) %>%
+  layout(yaxis = list(categoryorder = "array", categoryarray = ~ Count)) %>%
+  layout(
+    title = "Distribution of Content by Genre",
+    yaxis = list(title = "Genre"),
+    xaxis = list(title = "Count")
+  )
+
+
+#[10] #Content distribution by IMDb Categorization
+df%>% select(IMDbbins) %>%
+  filter(!is.na(IMDbbins)) %>%
+  mutate(IMDbbins = fct_lump(IMDbbins, 20)) %>%
+  group_by(IMDbbins) %>%
+  summarise(Count = n()) %>%
+  arrange(Count) %>%
+  plot_ly(
+    x = ~ Count ,
+    y = ~ IMDbbins,
+    type = "bar",
+    orientation = 'h'
+  ) %>%
+  layout(yaxis = list(categoryorder = "array", categoryarray = ~ Count)) %>%
+  layout(
+    title = "Content distribution by IMDb Categorization",
+    yaxis = list(title = "IMDb Categorization"),
+    xaxis = list(title = "Count")
+  )
+
+#[11]
+df%>% select(Rotten.Tomatoesbins) %>%
+  filter(!is.na(Rotten.Tomatoesbins)) %>%
+  mutate(Rotten.Tomatoesbins = fct_lump(Rotten.Tomatoesbins, 20)) %>%
+  group_by(Rotten.Tomatoesbins) %>%
+  summarise(Count = n()) %>%
+  arrange(Count) %>%
+  plot_ly(
+    x = ~ Count ,
+    y = ~ Rotten.Tomatoesbins,
+    type = "bar",
+    orientation = 'h'
+  ) %>%
+  layout(yaxis = list(categoryorder = "array", categoryarray = ~ Count)) %>%
+  layout(
+    title = "Content distribution by Rotten.Tomatoes Categorization",
+    yaxis = list(title = "Rotten.Tomatoes Categorization"),
+    xaxis = list(title = "Count")
+  )
+
+
+#[12] Violin Plots: IMDbbins and Genre
+ggplot(df, aes(x = IMDbbins, y = IMDb, fill = IMDbbins)) +
+  geom_violin() +       # geom_*, this one makes it a violin plot
+  labs(                 # labs() labels the...
+    title = "IMDbbins Distribution", # ...title
+    x = "IMDbbins Categories",        # ...x-axis
+    y = "IMDb Scores",    # ...y-axis
+  ) +
+  scale_y_log10() +     # scale_*, this one makes the y-axis logarithmic
+  scale_fill_manual(values = c("Poor"="#FFFFFF", # scale_*, this one controls the colors
+                               "Normal"="#FFFFD4",
+                               "Good"="#FFFFAA",
+                               "Excellent"="#FFFF7F"
+                               )) + ##IMDbbins in the "Excellent" end of the spectrum are more yellow. 
+  theme_light() +       # theme_*, applies pre-set theme
+  theme(                # theme() allows custom tweaks, such as...
+    plot.title = element_text(hjust = 0.5), #...centering the title
+    legend.position="none"                  #...hiding the legend
+  ) +
+  facet_wrap(~ Genre)   
+
+##Inference: 
+#The Genre: "Biography" seems to be performing well as far as IMDb ratings are concerned. 
+#From all the content on Netflix and Amazon Prime Video, we see only Good, and Excellent Ratings here. 
+#Thus, as a business insight, if both these platforms: Netflix and Amazon Prime Video were to create more content which are of the Genre, "Biography", there is a good chance that the overall IMDb ratings of their content would go higher. 
+
+#[13]
+ggplot(df, aes(x = Rotten.Tomatoesbins, y = Rotten.Tomatoes, fill = Rotten.Tomatoesbins)) +
+  geom_violin() +       # geom_*, this one makes it a violin plot
+  labs(                 # labs() labels the...
+    title = "Rotten.Tomatoesbins Distribution", # ...title
+    x = "Rotten.Tomatoesbins Categories",        # ...x-axis
+    y = "Rotten.Tomatoes Scores",    # ...y-axis
+  ) +
+  scale_y_log10() +     # scale_*, this one makes the y-axis logarithmic
+  scale_fill_manual(values = c("Poor"="#FFFFFF", # scale_*, this one controls the colors
+                               "Normal"="#FFFFD4",
+                               "Good"="#FFFFAA",
+                               "Excellent"="#FFFF7F"
+  )) + ##Rotten.Tomatoesbins in the "Excellent" end of the spectrum are more yellow. 
+  theme_light() +       # theme_*, applies pre-set theme
+  theme(                # theme() allows custom tweaks, such as...
+    plot.title = element_text(hjust = 0.5), #...centering the title
+    legend.position="none"                  #...hiding the legend
+  ) +
+  facet_wrap(~ Genre)   
+
+#Inferences:
+#Here we see that the Genre: "Fantasy", "Mystery", and "Romance" are performing quite poorly 
+#as far as Rotten.Tomatoes scores are concerned. 
+#This raises a few questions: 
+#- Are ratings given from Rotten.Tomatoes more critical in nature? 
+#[This is because the same content has a better IMDb rating as compared to Rotten.Tomatoes]
+
+#Perhaps it would make a lot of business sense for the content providers: Amazon Prime Video and Netflix to go through the scoring rubrics/criteria of evaluation 
+#as followed by Rotten.Tomatoes
+
+
+
+#[14] Pie Chart: Using Combined Average Ratings 
+#Creating new attributes: New_IMDb=IMDb*10 [This is because we would like to create a column called: "Average Ratings"]
+#This is also being done to balance out the range of IMDb as the range of values for Rotten.Tomatoes is higher. 
+
+library(dplyr)
+# Mutate function for creating new variable to the dataframe in R
+df_new = mutate(df, New_IMDb=IMDb*10)
+head(df_new)
+
+##Adding a new attribute (column) known as "Combined_Average_Rating"
+df_new = mutate(df_new, Combined_Average_Rating=(New_IMDb+Rotten.Tomatoes)/2)
+head(df_new)
+
+#viewing the table:
+view(df_new)
+
+str(df_new)
+
+#################################################################
+#Creating bins for Combined_Average_Rating
+Combined_Average_Rating<- df_new$Combined_Average_Rating
+Combined_Average_Rating
+cut(Combined_Average_Rating,10)
+###The levels are (1.99 to 3.67] ,(3.67 to 5.35], (5.35 to 7.02] ,(7.02 to 8.71]
+df_new$CARbins <- cut(Combined_Average_Rating,10)
+
+view(df_new) #Viewing the updated dataframe 
+#################################################################   
+
+#Checking for Outliers in the newly created attribute. 
+boxplot(df_new$Combined_Average_Rating, main="Boxplot of Combined_Average_Rating")$out #(Shakya, S. et al., 2021)
+
+#Let us look at the summary stats for Combined_Average_Rating
+summary(Combined_Average_Rating)
+
+
+
+#[14] Pie Chart: Using Combined Average Ratings  
+spread_by_CARbins <- df_new %>% group_by(CARbins) %>% summarise(
+  count = n()
+)
+
+pie_chart_5 <- plot_ly(spread_by_CARbins, labels = ~CARbins, values = ~count, type = 'pie', marker = list(colors = c("#00ee00", "#0047bb", "#2f4f4f", "#97d700")))
+pie_chart_5 <- pie_chart_5 %>% layout(title = 'Split Of Netflix and Amazon Prime Video Content By CAR Scale',
+                                      xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+                                      yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+pie_chart_5
+
+
+view(df_new)
+
+###########################################################
+#[15] Distribution of Content from Netflix and Amazon Prime Video across CAR Slabs
+
+library(tidyverse)
+ggplot(df_new) +
+  geom_bar(aes(x = CARbins), fill="#97d700")+
+  labs(                 # labs() labels the...
+    title = "Distribution of Content across CAR Slabs", # ...title
+    x = "CAR Slabs",        # ...x-axis
+    y = "Count",    # ...y-axis
+  )
+
+###########################################################
+
+
+####Defining the mean and median values for Combined_Average_Rating
+mean(Combined_Average_Rating)    #Computing Mean
+median(Combined_Average_Rating) #Computing Median 
+sd(Combined_Average_Rating)   #Computing Standard Deviation 
+var(Combined_Average_Rating) #Computing Variance 
+kurtosis(Combined_Average_Rating) #Computing Kurtosis 
+skewness(Combined_Average_Rating) #Computing Skewness
+summary(Combined_Average_Rating)
+############################################################
+
+mean(Rotten.Tomatoes)    #Computing Mean
+median(Rotten.Tomatoes) #Computing Median 
+sd(Rotten.Tomatoes)   #Computing Standard Deviation 
+var(Rotten.Tomatoes) #Computing Variance 
+kurtosis(Rotten.Tomatoes) #Computing Kurtosis 
+skewness(Rotten.Tomatoes) #Computing Skewness
+summary(Rotten.Tomatoes)
+############################################################
+
+
+
+new_df <- data.frame(year = 1900:2020, 1920:1940, 1940:1960, 1960:1980, 1980:2000, 2000:2020,value = runif(100))
+new_df <- transform(dat, bin = cut(Year, 20))
+
+
+
+#[16] Distribution of Content across different Years 
+
+#Creating bins for "Year"
+Year<- df_new$Year
+Year
+cut(Year,6)
+cut(Year,6, labels = c("1900:1920", "1920:1940", "1940:1960", "1960:1980", "1980:2000", "2000:2020"))
+df_new$Year_Range <- cut(Year,6, labels = c("1900:1920", "1920:1940", "1940:1960", "1960:1980", "1980:2000", "2000:2020"))
+
+view(df_new)
+#After this, a new column (attribute), i.e., Year_Range gets added to the "df_new" dataframe
+  
+#####Distribution of Content from Netflix and Amazon Prime Video across Year Slabs
+
+library(tidyverse)
+ggplot(df_new) +
+  geom_bar(aes(x = Year_Range), fill="#006272")+
+  labs(                 # labs() labels the...
+    title = "Distribution of Content across different Years", # ...title
+    x = "Year Range",        # ...x-axis
+    y = "Count of Content",    # ...y-axis
+  )
+#####Inferences: There is an exponential increase in content over the last 20 years, i.e. 2000-2020  
+  
+
+
+#[17] Distribution of Content from Amazon Prime Video and Netflix across IMDb Rating Slabs
+library(tidyverse)
+ggplot(df_new) +
+  geom_bar(aes(x = IMDbbins), fill="#ffff66")+
+  labs(                 # labs() labels the...
+    title = "Distribution of Content across IMDb Rating Slabs", # ...title
+    x = "IMDb Rating Slabs",        # ...x-axis
+    y = "Count of Content",    # ...y-axis
+  )
+#####Inferences: There is a significantly high volume of content that has been rated as "Good" by IMDb
+
+
+###Now, I shall do some further analysis using Python. To do this, I will first export the 
+##df_new dataframe from R to a csv file format. 
+
+#write.csv(df_new,"df_new.csv") ##exporting the df_new dataframe to a csv file format. 
+
+
+#####We now take the next steps on Python.##########
+
+
